@@ -14,8 +14,20 @@ public class ButtonAction : MonoBehaviour
         {
             panel.SetActive(!panel.activeSelf);
         }
-    }
 
+        if (GameObject.FindGameObjectWithTag("Master") != null)
+        {
+            GameObject.FindGameObjectWithTag("Master").GetComponent<GameLogic>().Pause = !GameObject.FindGameObjectWithTag("Master").GetComponent<GameLogic>().Pause;
+
+            if (!panel.activeInHierarchy)
+                GameObject.FindGameObjectWithTag("Master").GetComponent<GameLogic>().UnselectSelectedObject();
+        }
+
+        if (Camera.main.GetComponent<CameraMovement>())
+        {
+            Camera.main.GetComponent<CameraMovement>().Pause = !Camera.main.GetComponent<CameraMovement>().Pause;
+        }
+    }
 
     public void LoadScene(string scene)
     {

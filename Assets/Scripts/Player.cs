@@ -8,8 +8,26 @@ public class Player : MonoBehaviour
     [SerializeField] private GraphContainer graph;
 
     public bool IsActive { set; get; }
+    public bool isInGame { set; get; } = true;
 
+    public int WinPoints { get;set;} = 0;
     private float GoldAmount = 500;
+    public bool Bonus = false;
+    public int BonusTime = 0;
+    public int AdditionalQuestPoints = 0;
+
+    //------------------bocie sprawy
+    public bool Bot = false;
+    public bool NeedResearch = false;
+
+
+    public void ActivateBonus(int bon)
+    {
+        Bonus = true;
+        BonusTime = bon *2;
+        GoldAmount *= (bon);
+        AdditionalQuestPoints = bon / 2;
+    }
 
     public float goldAmount
     { get
@@ -22,44 +40,39 @@ public class Player : MonoBehaviour
         }
     }
 
-    [SerializeField]  public GameObject pawn;
-    [SerializeField] private Pawn PawnScript;
+    // Lista statków - flota
+    public List<GameObject> pawnList = new List<GameObject>();
+    public List<GameObject> PlanetList { get; private set; }  = new List<GameObject>();
+    public List<MotherPlanet> MotherPlanetList = new List<MotherPlanet>();
+    public List<SpaceSystem> SystemList { get; private set; } = new List<SpaceSystem>();
+    public List<Connection> ConnectionList { get; private set; } = new List<Connection>();
+
     private int questPoints = 2;
     public int QuestPoints { set { questPoints = value; } get { return questPoints; } }
 
-    public int PlayerNr1 { get => PlayerNr; set => PlayerNr = value; }
+    public int PlayerNr { get; set; }
  
-
-    private int PlayerNr;
-
     private GameObject StartPlanet;
-    public GameObject GetStartPlanet { get => StartPlanet; set => StartPlanet = value; }
-
-
-
-    // Start is called before the first frame update
-    public void Start()
+    public GameObject GetStartPlanet { get => MotherPlanetList[0].gameObject; set => StartPlanet = value; }
+    
+    public void Init()
     {
-        // battle = FindObjectOfType<BattleHandler>();
-        // graph = FindObjectOfType<GraphContainer>();
- 
-
+        graph = FindObjectOfType<GraphContainer>();
+        battle = FindObjectOfType<BattleHandler>();
     }
 
     public void CreatePawn(Vector3 Pos)
     {
-        graph = FindObjectOfType<GraphContainer>();
-        battle = FindObjectOfType<BattleHandler>();
-
-
         // utworzenie pionka gracza
-        GameObject objPrefab = Resources.Load("Pawn1") as GameObject;
-        pawn = Instantiate(objPrefab, Pos, new Quaternion(0, 0, 0, 0));
+        GameObject objPrefab = Resources.Load("Prefabs/Pawn1") as GameObject;
 
-        Color PlayerCol = PlayerColor(PlayerNr);
-        pawn.GetComponent<Renderer>().material.color = PlayerCol;
-        // skrót do skrpytu pionka
-        PawnScript = pawn.GetComponent<Pawn>();
+        pawnList.Add(Instantiate(objPrefab, new Vector3(Pos.x,Pos.y,1f), new Quaternion(0, 0, 0, 0)));
+        pawnList[pawnList.Count-1].GetComponent<Renderer>().material.color = PlayerColor(PlayerNr);
+        pawnList[pawnList.Count - 1].GetComponent<Pawn>().Player = this.gameObject;
+    }
+    public Color MyColor()
+    {
+        return PlayerColor(PlayerNr);
     }
 
     public Color PlayerColor(int i)
@@ -86,64 +99,40 @@ public class Player : MonoBehaviour
                 return Color.black;
         }
     }
-    
-    void FixedUpdate()
-    {
-      //  if (IsActive)
-       // {
-       //     HandleInputs();
-      //  }
-  
-    }
-
-
-    void HandleInputs()
-    {
-        if (Input.GetMouseButtonDown(0)) {
-            Vector3 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-            Vector2 mousePos2D = new Vector2(mousePos.x, mousePos.y);
-            
-            RaycastHit2D hit = Physics2D.Raycast(mousePos2D, Vector2.zero);
-
-            // Przemieszczanie się po planszy
-            // jeśli klikam na planetę która nie jest null i mam punnkty zadań,
-            if (hit.collider != null && questPoints != 0)
-            {
-                // jeśli planeta na którą klikam jest różna od tej na któej jestem, sprawdzenie czy planety są połączone
-                if (PawnScript.ReturnCurrentPlanet() != hit.collider.gameObject
-                    && graph.CheckConnection(PawnScript.ReturnCurrentPlanet(), hit.collider.gameObject))
-                {
-                    // sprawdź cczy na planecie na którą klikam jest pionek innego gracza
-                    if (hit.collider.GetComponent<Location>().IsPawnHere())
-                    {
-                        Debug.Log("Gracz tu jest");
-                        // rozpoczynam walkę pomiedzy aktualnym graczem, a graczem ktory jest na planecie
-                        battle.Battle(PawnScript, hit.collider.GetComponent<Location>().GetPawn());
-                        hit.collider.GetComponent<Location>().GetPawn().Death();
-                    }
-
-                    // Ustaw gracza na nowej planecie 
-                    SetPawnOnPlanet(hit.collider.gameObject);
-
-                    // zmniejsz pulę punktów zadań gracza
-                    questPoints -= 1;
-                }
-            }
-        }
-    }
-
 
     public void RestartPoints()
     {
-        questPoints = 2;
+        if (BonusTime <= 1)
+        {
+            Bonus = false;
+            AdditionalQuestPoints = 0;
+            BonusTime = 0;
+        }
+        else BonusTime--;
+
+        if (!Bonus)
+            questPoints = 2;
+        else
+        {
+            questPoints = 2 + AdditionalQuestPoints;
+        }
+
+        foreach (var pawn in pawnList)
+        {
+            pawn.GetComponent<Pawn>().RestartPoints(AdditionalQuestPoints);
+        }
     }
 
     public void SetPawnOnPlanet(GameObject planet)
     {
-        //pawn.transform.position = planet.gameObject.transform.position;
-        pawn.GetComponent<Pawn>().SetCurrentPlanet(planet);
-        pawn.transform.SetParent(planet.gameObject.transform, true);
-        //pawn.GetComponent<Pawn>().Move();
+        //if (!PlanetList.Contains(planet))
+        //{
+        //    PlanetList.Add(planet);
+        //    planet.GetComponent<Location>().ShowPlanet();
+        //}
+
+        pawnList[pawnList.Count - 1].GetComponent<Pawn>().GetComponent<Pawn>().SetCurrentPlanet(planet);
+        pawnList[pawnList.Count - 1].GetComponent<Pawn>().transform.SetParent(planet.gameObject.transform, true);
 
     }
 
@@ -151,14 +140,14 @@ public class Player : MonoBehaviour
     {
         StartPlanet = planet;
         Color PlayerCol = PlayerColor(PlayerNr);
-        planet.GetComponent<Location>().ChangeOwner(PlayerNr);
-        //SetPawnOnPlanet(StartPlanet);
-        pawn.GetComponent<Pawn>().SetCurrentPlanet(planet);
-        pawn.transform.SetParent(planet.transform, true);
+        planet.GetComponent<Planet>().ChangeOwner(PlayerNr);
+
+        pawnList[pawnList.Count - 1].GetComponent<Pawn>().GetComponent<Pawn>().SetCurrentPlanet(planet);
+        pawnList[pawnList.Count - 1].GetComponent<Pawn>().transform.SetParent(planet.transform, true);
     }
 
     public GameObject ReturnPawn()
     {
-        return pawn;
+        return pawnList[pawnList.Count - 1];
     }
 }

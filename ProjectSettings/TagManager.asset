@@ -6,6 +6,10 @@ TagManager:
   tags:
   - Pawn
   - Planet
+  - SpaceSector
+  - Location
+  - MovePoints
+  - Master
   layers:
   - Default
   - TransparentFX
@@ -40,6 +44,15 @@ TagManager:
   - 
   - 
   m_SortingLayers:
+  - name: BackGround
+    uniqueID: 1026135449
+    locked: 0
   - name: Default
     uniqueID: 0
+    locked: 0
+  - name: Planets
+    uniqueID: 4000003059
+    locked: 0
+  - name: Front
+    uniqueID: 2187500217
     locked: 0

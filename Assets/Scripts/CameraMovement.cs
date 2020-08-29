@@ -2,39 +2,75 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class CameraMovement : MonoBehaviour {
+public class CameraMovement : MonoBehaviour
+{
+    [SerializeField] float CamSpeed = 4;
+    public bool Pause { get; set; }
+    private float targetZoom;
+    private float BorderThickness = 10f;
 
-    [SerializeField] private float yMin;
-    [SerializeField] private float yMax;
-    [SerializeField] private float xMin;
-    [SerializeField] private float xMax;
-
-    [SerializeField] private Transform tf;
-    [SerializeField] private float speed;
+    Vector2 Limit = new Vector2(150, 150);
+    private float BorderLimit = 0f;
 
     void Start ()
     {
-     
-	}
+        
+        targetZoom = Camera.main.orthographicSize;
+    }
 
-	void LateUpdate ()
+    void Update()
     {
-        //Vector3 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        Movement();
-        //ChangePos(tf);
-	}
+        if (!Pause)
+        {
+            Movement();
+            Zoom();
+        }
+    }
+
     void Movement()
     {
-        float horizontal = Input.GetAxis("Horizontal");
-        float vertical = Input.GetAxis("Vertical");
-
-        transform.position = new Vector3(transform.position.x + (horizontal * speed), transform.position.y + vertical * speed, -11f);
+        Vector2 pos = transform.position;
+        
+        if (Input.GetKey("w") || Input.mousePosition.y >= Screen.height - BorderThickness)
+        {
+            pos.y += CamSpeed * Time.deltaTime;
+        }
+        if (Input.GetKey("s") || Input.mousePosition.y <= BorderThickness)
+        {
+            pos.y -= CamSpeed * Time.deltaTime;
+        }
+        if (Input.GetKey("d") || Input.mousePosition.x >= Screen.width - BorderThickness)
+        {
+            pos.x += CamSpeed * Time.deltaTime;
+        }
+        if (Input.GetKey("a") || Input.mousePosition.x <= BorderThickness)
+        {
+            pos.x -= CamSpeed * Time.deltaTime;
+        }
+        //pos.x = Mathf.Clamp(pos.x, Limit.x - BorderLimit, Limit.y + BorderLimit);
+       // pos.y = Mathf.Clamp(pos.y, Limit.x - BorderLimit, Limit.y + BorderLimit);
+        ChangePosition(pos);
     }
 
-    public void ChangePos(Transform target)
+    public void ChangePosition(Vector2 pos)
     {
-        //transform.position = new Vector3(Mathf.Clamp(target.position.x, xMin, xMax), Mathf.Clamp(target.position.y, yMin, yMax), transform.position.z);
+        transform.position = new Vector3(pos.x, pos.y, -11f);
+    }
+    public void ChangePosition(Transform target)
+    {
         transform.position = target.position;
     }
+    private void Zoom()
+    {
+        float scrollData = Input.GetAxis("Mouse ScrollWheel");
 
+        targetZoom -= scrollData * 3f;
+        targetZoom = Mathf.Clamp(targetZoom, 1f, 12f);
+        Camera.main.orthographicSize = Mathf.Lerp(Camera.main.orthographicSize, targetZoom, Time.deltaTime * 10f);
+    }
+
+    public void SetNewLimit(int n)
+    {
+        Limit = new Vector2(0, n);
+    }
 }
