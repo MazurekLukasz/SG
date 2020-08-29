@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using static PlayerPanel;
 
 // klasa służy jako pojemnik do przechowywania nazw oraz graczy
 public class NamesHolder : MonoBehaviour
@@ -9,6 +10,8 @@ public class NamesHolder : MonoBehaviour
     public static List<string> PlayerNames = new List<string>();
     public static List<bool> PlayerBot = new List<bool>();
     static int TurnLimit;
+
+    public static List<PlayerData> PlayersToActivateLater = new List<PlayerData>();
 
     // Lista graczy, tutaj są przechowywane wskaźniki do niech
     public List<GameObject> PlayerList = new List<GameObject>();
@@ -20,6 +23,15 @@ public class NamesHolder : MonoBehaviour
     public List<string> GetPlayerNames()
     {
         return PlayerNames;
+    }
+
+    public void AddToActiveLater(PlayerData item)
+    {
+        PlayersToActivateLater.Add(item);
+    }
+    public List<PlayerData> ReturnLaterPlayersList()
+    {
+        return PlayersToActivateLater;
     }
 
     public int PlayerNumber()

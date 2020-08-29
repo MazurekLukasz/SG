@@ -18,10 +18,10 @@ public class Connection : MonoBehaviour
         lineRend.positionCount = 2;
         lineRend.SetPosition(0, Planet1.transform.position);
         lineRend.SetPosition(1, Planet2.transform.position);
-        //  Sys1 = Planet1.GetComponentInParent<SpaceSystem>();
-        //    Sys2 = Planet2.GetComponentInParent<SpaceSystem>();
-        Sys1 = Planet1.GetComponent<Location>().ReturnSector();
-        Sys2 = Planet2.GetComponent<Location>().ReturnSector();
+        Sys1 = Planet1.GetComponentInParent<SpaceSystem>();
+        Sys2 = Planet2.GetComponentInParent<SpaceSystem>();
+        //Sys1 = Planet1.GetComponent<Location>().ReturnSector();
+        //Sys2 = Planet2.GetComponent<Location>().ReturnSector();
 
     }
 

@@ -51,7 +51,9 @@ public class Player : MonoBehaviour
     public int QuestPoints { set { questPoints = value; } get { return questPoints; } }
 
     public int PlayerNr { get; set; }
- 
+    public int TurnToStart = 0;
+    public int ActivationMethod = 0;
+
     private GameObject StartPlanet;
     public GameObject GetStartPlanet { get => MotherPlanetList[0].gameObject; set => StartPlanet = value; }
     

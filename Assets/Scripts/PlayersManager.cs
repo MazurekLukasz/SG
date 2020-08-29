@@ -58,15 +58,32 @@ public class PlayersManager : MonoBehaviour
     {
         foreach (GameObject item in PlayersList)
         {
-            string str = item.GetComponentInChildren<InputField>().text;
+            bool tmp = item.GetComponent<PlayerPanel>().GetData().LaterStart;
+            int bot = item.GetComponent<PlayerPanel>().GetData().bot;
+            
+
+            string str = item.GetComponent<PlayerPanel>().GetData().name;
             if (str != "")
             {
                 //Debug.LogError(item.GetComponentInChildren<Dropdown>().value == 0 ? false : true);
-                namesHolder.Add(str, item.GetComponentInChildren<Dropdown>().value == 0 ? false: true);
+                if (tmp)
+                {
+                    namesHolder.AddToActiveLater(item.GetComponent<PlayerPanel>().GetData());
+                }
+                else
+                {
+                    namesHolder.Add(str, /*item.GetComponentInChildren<Dropdown>().value*/bot == 0 ? false : true);
+                }
             }
             else
             {
-                namesHolder.Add("Unknown", item.GetComponentInChildren<Dropdown>().value == 0 ? false : true);
+                if (tmp)
+                {
+                    namesHolder.AddToActiveLater(item.GetComponent<PlayerPanel>().GetData());
+                }
+                else
+                    namesHolder.Add("Unknown", bot == 0 ? false : true);
+
             }
         }
 

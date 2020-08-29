@@ -54,6 +54,7 @@ public class GameLogic : MonoBehaviour
     void Start()
     {
         PlayersCount = namesHolder.PlayerNumber();
+        Debug.LogError("liczba graczy " + PlayersCount);
         if (PlayersCount <= 0)
         {
             UnityEngine.SceneManagement.SceneManager.LoadScene("MainMenu");
@@ -500,15 +501,17 @@ public class GameLogic : MonoBehaviour
         {
             while (true)
             {
-                if (graph.AddNewSector(SelectedObject.GetComponent<Planet>().ReturnSector(), currentPlayer.GetComponent<Player>()))
+                if (graph.AddNewSector(currentPlayer))
                 {
                     currentPlayer.GetComponent<Player>().QuestPoints--;
                     currentPlayer.GetComponent<Player>().goldAmount = -500;
                     cash_sound.Play();
                     ResetPlanetAvailability();
                     UpdateLogs();
+
                     if (!currentPlayer.Bot)
                     { ShowMessage(2f, "New space system founded."); }
+
                     break;
                 }
             }
@@ -522,6 +525,7 @@ public class GameLogic : MonoBehaviour
             }
         }
     }
+
     public bool AddTurns = false;
     public Dropdown NewPlayerOption;
 
@@ -551,6 +555,54 @@ public class GameLogic : MonoBehaviour
             graph.CreateSpaceForStrongPlayer();
         }
         
+        if (AddTurns)
+        {
+            int AdditionalTurns;
+            if (namesHolder.GetTurnLimit() - turnsCounter <= 7)
+            {
+                AdditionalTurns = 7;
+            }
+            else if (namesHolder.GetTurnLimit() - turnsCounter <= 14)
+            {
+                AdditionalTurns = 3;
+            }
+            else
+            {
+                AdditionalTurns = 0;
+            }
+            namesHolder.SetTurnLimit(namesHolder.GetTurnLimit() + AdditionalTurns);
+            maxTurns.text = "/" + (namesHolder.GetTurnLimit());
+        }
+
+        ResetPlanetAvailability();
+    }
+
+    public void AddNewPlayer(string s, bool bot, int method)
+    {
+
+        string str = s;
+        if (str != "")
+            namesHolder.Add(str, bot);
+        else
+            namesHolder.Add("Unknown", bot);
+
+        namesHolder.AddPlayer(PlayersCount, bot);
+        PlayersCount = namesHolder.PlayerNumber();
+
+        if (method == 0)
+        {
+            GameObject tmp = graph.CreateSpaceForNewPlayer();
+            namesHolder.SetNewPlayerPosition(tmp);
+
+            int val = MeanPlayersWinPoints(namesHolder.ActivePlayerList[namesHolder.ActivePlayerList.Count - 1].GetComponent<Player>().PlayerNr) / 4;
+            if (val <= 1) val = 2;
+            namesHolder.ActivePlayerList[namesHolder.ActivePlayerList.Count - 1].GetComponent<Player>().ActivateBonus(val);
+        }
+        else if (method == 1)
+        {
+            graph.CreateSpaceForStrongPlayer();
+        }
+
         if (AddTurns)
         {
             int AdditionalTurns;
@@ -658,6 +710,18 @@ public class GameLogic : MonoBehaviour
         txt.text = s;
     } // zmiana tekstu
 
+
+    void CheckForNewPlayer()
+    {
+        foreach (PlayerPanel.PlayerData item in namesHolder.ReturnLaterPlayersList())
+        {
+            if (item.ActivationTurn == turnsCounter)
+            {
+                AddNewPlayer(item.name,true, item.Method);
+            }
+        }
+    }
+
     bool EndTurnPause;
     public void EndTurn()
     {
@@ -678,6 +742,8 @@ public class GameLogic : MonoBehaviour
                 // dodanie złota dla graczy
                 AddGoldForPlayers();
             }
+
+            CheckForNewPlayer();
         }
         // należy zaznaczyć, że obecny gracz już nie jest aktywny
         currentPlayer.GetComponent<Player>().IsActive = false;
@@ -962,7 +1028,8 @@ public class GameLogic : MonoBehaviour
     bool Builder = true;
     bool trybuild = true;
     bool tryMove = true;
-    public bool ShowBotsMoves = true;
+    bool ShowBotsMoves = false;
+
     public void Botcontrol()
     {
         Debug.LogError("endless");
@@ -988,7 +1055,7 @@ public class GameLogic : MonoBehaviour
             return;
         }
 
-        if (Builder)// just ignore for now .... (BUILDER -  priority is to build, and then research for other places)
+        if (Builder)// just ignore for now .... (BUILDER -  priority is to build, and then research for other places, no care of the enemy)
         {
 
             if (trybuild)
@@ -997,9 +1064,11 @@ public class GameLogic : MonoBehaviour
                 if (ForceResearch)
                 {
                     AIResearch(currentPlayer.PlanetList[0]);
+                    ForceResearch = false;
+
                     if (!StillCanBuild() || currentPlayer.QuestPoints <= 0)
                     { trybuild = false; }
-                    ForceResearch = false;
+                    
                 }
                 else
                 {
@@ -1164,8 +1233,10 @@ public class GameLogic : MonoBehaviour
             if (currentPlayer.ReturnPawn().GetComponent<Pawn>().TargetPath.Count <= 0) // nie mam celu trasy
             {
                 GameObject nextPlanet = ReturnFirstNotMyPlanetInSector(true);
+                
                 if (nextPlanet != null)// przemieszczanie się w obrębie sektoru
                 {
+                    Debug.LogError(nextPlanet.name);
                     Debug.LogError("got planet in sector to go");
                     if (nextPlanet != currentPlayer.ReturnPawn().GetComponent<Pawn>().ReturnCurrentPlanet())// jesli idę na inną planetę z tego samego sektora
                     {
@@ -1211,8 +1282,23 @@ public class GameLogic : MonoBehaviour
 
                     nextPlanet = ReturnFirstNotMyPlanetInSector(false);
                     if (nextPlanet != null)
-                        currentPlayer.ReturnPawn().GetComponent<Pawn>().TargetPath = FindTheWay(currentPlayer.ReturnPawn().GetComponent<Pawn>().ReturnCurrentPlanet().GetComponent<Location>(),
-                            nextPlanet.GetComponent<Location>());
+                    {
+                        //if (currentPlayer.MotherPlanetList.Count <= 0)
+                        //{
+                        //    tryMove
+                        //    return;
+                        //}
+                        Debug.LogError(nextPlanet.name);
+                        List<GameObject> tmp = FindTheWay(currentPlayer.ReturnPawn().GetComponent<Pawn>().ReturnCurrentPlanet().GetComponent<Location>(), nextPlanet.GetComponent<Location>());
+
+                        if (tmp.Count <= 0)
+                        {
+                            tryMove = false;
+                            return;
+                        }
+                        else
+                        currentPlayer.ReturnPawn().GetComponent<Pawn>().TargetPath =tmp;
+                    }  
                     else// czyli nie mam gdzieiść
                     {
                         tryMove = false;
@@ -1228,8 +1314,9 @@ public class GameLogic : MonoBehaviour
                     {
                         PawnMove(currentPlayer.ReturnPawn(), currentPlayer.ReturnPawn().GetComponent<Pawn>().TargetPath[0]);
                         currentPlayer.ReturnPawn().GetComponent<Pawn>().TargetPath.RemoveAt(0);
+                        Debug.LogError("");
                     }
-                    Debug.LogError("2");
+                    
                 }
                 else
                 {
@@ -1298,7 +1385,12 @@ public class GameLogic : MonoBehaviour
         //znajdź wszystkie połączenia
         List<SpaceSystem> Done = new List<SpaceSystem>();
         List<GameObject> DoneConn = new List<GameObject>();
-        start.ReturnSector().GetComponent<SpaceSystem>().CheckPath(null, end.ReturnSector().GetComponent<SpaceSystem>(), Done, DoneConn);
+        start.ReturnSector().GetComponent<SpaceSystem>().CheckPath(null, end.ReturnSector().GetComponent<SpaceSystem>(), Done, DoneConn, currentPlayer);
+
+        if (end.ReturnSector().GetComponent<SpaceSystem>().Last == null) // nie znaleziono ścieżki
+        {// nie powinno się tak zdażyć, zawsze szukamy planety z połączenia, jest to dodatkowe zabezpieczenie
+            return null;
+        }
 
         //Connection conn = end.ReturnSector().GetComponent<SpaceSystem>().Last;
         SpaceSystem last = end.ReturnSector().GetComponent<SpaceSystem>();

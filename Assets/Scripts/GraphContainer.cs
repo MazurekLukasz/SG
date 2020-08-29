@@ -115,7 +115,7 @@ public class GraphContainer : MonoBehaviour
         }
     }
 
-    public bool AddNewSector(SpaceSystem Sector, Player player)
+    public bool AddNewSector(Player player)
     {
         bool System = false;
         bool Connection = false;
@@ -339,8 +339,11 @@ public class GraphContainer : MonoBehaviour
         conn.GetComponent<Connection>().Planet2 = loc2;
         conn.GetComponent<Connection>().Init();
         ConnectionsList.Add(conn);
-        //conn.GetComponent<Connection>().Sys1.ConnectionsList.Add(conn);
-        //conn.GetComponent<Connection>().Sys2.ConnectionsList.Add(conn);
+        
+        if(!conn.GetComponent<Connection>().Sys1.ConnectionsList.Contains(conn))
+            conn.GetComponent<Connection>().Sys1.ConnectionsList.Add(conn);
+        if (!conn.GetComponent<Connection>().Sys2.ConnectionsList.Contains(conn))
+            conn.GetComponent<Connection>().Sys2.ConnectionsList.Add(conn);
 
         //loc1.GetComponent<SpaceSystem>().ConnectionsList.Add(conn);
         //loc2.GetComponent<SpaceSystem>().ConnectionsList.Add(conn);
@@ -364,22 +367,11 @@ public class GraphContainer : MonoBehaviour
         GameObject conn2 = Instantiate(ConnectionPoint, new Vector3(x, y, 0), new Quaternion(0, 0, 0, 0), Sector2.transform);
         Sector2.GetComponent<SpaceSystem>().PlanetsList.Add(conn2);
 
-
-
-
         if (UseDatabase)
         {
             // utwórz punkt w bazie danych
             db.CreateSectorConnection(Sector1, Sector2);
         }
-        //Vector3 newPos = (Sector1.transform.position + Sector2.transform.position) / 2;
-        //ConnectionsList.Add(Instantiate(ConnectionPoint, newPos, new Quaternion(0, 0, 0, 0)));
-        //ConnectionsList[ConnectionsList.Count - 1].transform.SetParent(gameObject.transform, false);
-        //ConnectionsList[ConnectionsList.Count - 1].GetComponent<Connection>().Planet1 = Sector1;
-        //ConnectionsList[ConnectionsList.Count - 1].GetComponent<Connection>().Planet2 = Sector2;
-        //ConnectionsList[ConnectionsList.Count - 1].GetComponent<Connection>().Init();
-        ////return PlanetsList[PlanetsList.Count - 1];
-
         GameObject conection = CreateConnection(conn1, conn2);
         Sector1.GetComponent<SpaceSystem>().ConnectionsList.Add(conection);
         Sector2.GetComponent<SpaceSystem>().ConnectionsList.Add(conection);
@@ -639,7 +631,7 @@ public class GraphContainer : MonoBehaviour
                 { break; }
                 while (true)
                 {
-                    if (AddNewSector(NewSystem, player))
+                    if (AddNewSector(player))
                     {
                         NewSystem = player.SystemList[player.SystemList.Count - 1];
                         break;

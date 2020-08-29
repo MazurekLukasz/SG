@@ -136,32 +136,41 @@ public class SpaceSystem : MonoBehaviour
 
     public SpaceSystem Last;
 
-    public void CheckPath(SpaceSystem last, SpaceSystem Endsys, List<SpaceSystem> done, List<GameObject> doneConn)
+    public void CheckPath(SpaceSystem last, SpaceSystem Endsys, List<SpaceSystem> done, List<GameObject> doneConn, Player player)
     {
-        //Debug.LogError("1");
+        if (!player.SystemList.Contains(this))
+        { return; }
+
         if (!done.Contains(this))
         { done.Add(this); }
+        else
+        {
+            return;
+        }
 
-        //Debug.LogError("2");
         Last = last;
 
-        if (done.Contains(Endsys))
+        //if (done.Contains(Endsys))
+        if(this == Endsys)
         { return; }
 
         foreach (var conn in ConnectionsList)
         {
+            if (!player.ConnectionList.Contains(conn.GetComponent<Connection>()))
+            { continue; }
+
             if (!doneConn.Contains(conn))
             {
                 doneConn.Add(conn);
                 if (this == conn.GetComponent<Connection>().Sys1)
                 {
                     //Debug.LogError("let's go to another space system"); // ----------HERE ----
-                    conn.GetComponent<Connection>().Sys2.CheckPath(this/*conn.GetComponent<Connection>()*/, Endsys, done,doneConn);
+                    conn.GetComponent<Connection>().Sys2.CheckPath(this, Endsys, done,doneConn,player);
                 }
                 else if (this == conn.GetComponent<Connection>().Sys2)
                 {
                     //Debug.LogError("let's go to another space system 2");
-                    conn.GetComponent<Connection>().Sys1.CheckPath(this /*conn.GetComponent<Connection>()*/, Endsys, done, doneConn);
+                    conn.GetComponent<Connection>().Sys1.CheckPath(this, Endsys, done, doneConn, player);
                 }
             }
         }
