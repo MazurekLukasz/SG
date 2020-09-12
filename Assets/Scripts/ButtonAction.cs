@@ -6,7 +6,12 @@ using UnityEngine.SceneManagement;
 
 public class ButtonAction : MonoBehaviour
 {
+    public static ButtonAction Instance;
 
+    private void Awake()
+    {
+        Instance = this;
+    }
 
     public void TooglePanel(GameObject panel)
     {

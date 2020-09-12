@@ -107,6 +107,7 @@ public class BattleHandler : MonoBehaviour
                 {
                     gameLogic.EndTurn();
                 }
+                pawn2.Player.GetComponent<Player>().DeathTurn = (int)gameLogic.turnsCounter;
                 namesHolder.ActivePlayerList.Remove(pawn2.Player);
             }
             

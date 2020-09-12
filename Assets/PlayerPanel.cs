@@ -13,6 +13,7 @@ public class PlayerPanel : MonoBehaviour
         public bool LaterStart;
         public int ActivationTurn;
         public int Method;
+        public Strategy Tactic;
     }
 
     public GameObject BotPanel;
@@ -22,6 +23,7 @@ public class PlayerPanel : MonoBehaviour
 
     public Dropdown Method;
     public Text ActivationTurn;
+    public Dropdown StrategyDrop;
 
     void Start()
     {
@@ -67,15 +69,34 @@ public class PlayerPanel : MonoBehaviour
         if (BotPanel.activeInHierarchy)
         {
             data.LaterStart = BotPanel.GetComponent<Toggle>().isOn;
+
+            switch (StrategyDrop.value)
+            {
+                case 0:
+                    data.Tactic = Strategy.casual;
+                    break;
+                case 1:
+                    data.Tactic = Strategy.builder;
+                    break;
+                case 2:
+                    data.Tactic = Strategy.explorer;
+                    break;
+                case 3:
+                    data.Tactic = Strategy.warrior;
+                    break;
+                default:
+                    data.Tactic = Strategy.casual;
+                    break;
+            }
         }
         else
         {
             data.LaterStart = false;
+            data.Tactic = Strategy.casual;
         }
 
         if (LaterStartPanel.activeInHierarchy)
         {
-            
             data.Method = Method.value;
 
             int tmp;
@@ -87,12 +108,6 @@ public class PlayerPanel : MonoBehaviour
             data.Method = 0;
             data.ActivationTurn = -1;
         }
-
-
         return data;
     }
-
-
-
-
 }

@@ -8,6 +8,7 @@ using System;
 using System.IO;
 using System.Net;
 using System.Text;
+using UnityEngine.UI;
 
 public class database: MonoBehaviour
 {
@@ -16,6 +17,11 @@ public class database: MonoBehaviour
     public string IP = "localhost:7474";
     public bool DebugLog = true;
 
+
+    private void Awake()
+    {
+        DontDestroyOnLoad(this);
+    }
 
     public string Query(string q)
     {
@@ -52,8 +58,6 @@ public class database: MonoBehaviour
     /// </summary>
     /// <param name="sector">sector to create point in database</param>
     /// 
-
-
     public void CreateSpaceSector(GameObject sector)
     {
         int x = (int)sector.transform.position.x;
@@ -110,4 +114,39 @@ public class database: MonoBehaviour
         }
     }
 
+
+
+
+
+    public string TestConnection(string url, string user, string pass, out string warn)
+    {
+        try
+        {
+            WebRequest request = WebRequest.Create("http://" + url + "/db/data/transaction/commit");
+            request.Method = "POST";
+            request.Credentials = new NetworkCredential(user, pass);
+            StreamWriter requestStream = new StreamWriter(request.GetRequestStream());
+            requestStream.Write("{\"statements\" : [ { \"statement\" : \"" + "match (n) return n" + "\", \"resultDataContents\" : [ \"graph\" ] } ]}");
+            requestStream.Flush();
+            requestStream.Close();
+            WebResponse response = request.GetResponse();
+            Stream stream = response.GetResponseStream();
+            var streamReader = new StreamReader(stream);
+            var responseJson = streamReader.ReadToEnd();
+            streamReader.Close();
+            stream.Close();
+            if (DebugLog)
+            {
+                Debug.Log("Odpowiedź w formacie Json:" + responseJson);
+            }
+            warn = "";
+            return responseJson;
+        }
+        catch (WebException webEx)
+        {
+            Debug.LogError("Błąd. Powód: " + webEx.Message );
+            warn = webEx.Message;
+            return "";
+        }
+    }
 }

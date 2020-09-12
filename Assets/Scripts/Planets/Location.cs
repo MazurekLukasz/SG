@@ -12,15 +12,12 @@ public class Location : MonoBehaviour
 
     public bool IsPawnHere()
     {
-        Transform[] ts = GetComponentsInChildren<Transform>();
+        Pawn[] ts = GetComponentsInChildren<Pawn>();
 
-        foreach (Transform t in ts)
+        foreach (Pawn t in ts)
         {
-            if (t.tag == "Pawn")
-            {
-                Debug.Log("Pawn is here:" + gameObject.name);
+                Debug.Log("Pawn is here");
                 return true;
-            }
         }
         return false;
     }

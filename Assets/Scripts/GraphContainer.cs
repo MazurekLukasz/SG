@@ -23,6 +23,8 @@ public class GraphContainer : MonoBehaviour
     //public List<GameObject> PlanetsList = new List<GameObject>();
     public List<GameObject> ConnectionsList = new List<GameObject>();
 
+    public List<GameObject> StartSectors = new List<GameObject>();
+
     private int XSectorDistance = 15;
     private int YSectorDistance = 8;
 
@@ -45,11 +47,14 @@ public class GraphContainer : MonoBehaviour
             // i zapisanie tej klasy pod zmienną o nazwie "db" 
             if (gameObject.GetComponent<database>())
             {
-                db = gameObject.GetComponent<database>();
+                db = GameObject.FindObjectOfType<database>(); //gameObject.GetComponent<database>();
             }
             else
             {
-                db = gameObject.AddComponent<database>();
+                db = GameObject.FindObjectOfType<database>();
+
+                if (db == null)
+                    db = gameObject.AddComponent<database>();
             }
             // Wyczyszczenie bazy danych
             db.ClearAll();
@@ -58,34 +63,110 @@ public class GraphContainer : MonoBehaviour
         // pętla o długości liczby graczy, dla każdego gracza musi zostać stworzony sektor
         for (int i = 0; i < playerNumber; i++)
         {
-            InitSector();
+
+            InitSector(i);
         }
     }
 
+    int Dist= 15;
     /// <summary>
     /// Create sector, return it
     /// </summary>
     /// <returns></returns>
-    public GameObject InitSector()
+    public GameObject InitSector(int player)
     {
-        Vector3 tmp;
-        // utworzenie sektorów dla graczy
-        do
+        GameObject obj = null;
+
+        if (NamesHolder.mapMode == MapMode.normal || NamesHolder.mapMode == MapMode.shared)
         {
-            int xRand = Random.Range(-3, 3);
-            int yRand = Random.Range(-3, 3);
-            tmp = new Vector3(xRand * XSectorDistance, yRand * YSectorDistance, 0);
+            Vector3 tmp;
+            // utworzenie sektorów dla graczy
+            if (NamesHolder.mapMode == MapMode.normal)
+            {
+                do
+                {
+                    int xRand = Random.Range(-3, 3);
+                    int yRand = Random.Range(-3, 3);
+                    tmp = new Vector3(xRand * XSectorDistance, yRand * YSectorDistance, 0);
+                }
+                while (SpaceSectorAlreadyHere(tmp));
+            }
+            else
+            {
+                tmp = new Vector3(0, (Dist * player * YSectorDistance), 0);
+            }
+
+
+            obj = CreateSpaceSystem(tmp);
+            obj.GetComponent<SpaceSystem>().CreateSystem();
+
+
+            if (UseDatabase)
+            {
+                // utwórz punkt w bazie danych
+                db.CreateSpaceSector(obj);
+            }
         }
-        while (SpaceSectorAlreadyHere(tmp));
-
-        GameObject obj = CreateSpaceSystem(tmp);
-        obj.GetComponent<SpaceSystem>().CreateSystem();
-
-
-        if (UseDatabase)
+        else if (NamesHolder.mapMode == MapMode.separate)
         {
-            // utwórz punkt w bazie danych
-            db.CreateSpaceSector(obj);
+            GameObject last = null;
+            for (int i = 0; i <= 4; i++)
+            {
+                Vector3 tmp;
+                switch (i)
+                {
+                    case 0:
+                    case 4:
+                        tmp = new Vector3(0, (Dist * player * YSectorDistance), 0);
+                        break;
+                    case 1:
+                        tmp = new Vector3(0, (Dist * player * YSectorDistance) + YSectorDistance, 0);
+                        break;
+                    case 2:
+                        tmp = new Vector3(0 - XSectorDistance, (Dist * player * YSectorDistance) + YSectorDistance, 0);
+                        break;
+                    case 3:
+                        tmp = new Vector3(0 - XSectorDistance, (Dist * player * YSectorDistance), 0);
+                        break;
+                    //case 5:
+                    //    tmp = new Vector3(0 + XSectorDistance, (Dist * player * YSectorDistance), 0);
+                    //    break;
+                    //case 6:
+                    //    tmp = new Vector3(0 + XSectorDistance, (Dist * player * YSectorDistance) + YSectorDistance, 0);
+                    //    break;
+                    //case 7:
+                    //    tmp = new Vector3(0 , (Dist * player * YSectorDistance) + YSectorDistance, 0);
+                    //    break;
+                    default:
+                        tmp = new Vector3(0, 0, 0);
+                        break;
+                }
+
+
+                if (SpaceSectorAlreadyHere(tmp))
+                {
+                    obj = ReturnSectorAtPos(tmp);
+                }
+                else
+                {
+                    obj = CreateSpaceSystem(tmp);
+                    obj.GetComponent<SpaceSystem>().CreateSystem();
+                }
+
+                if (i == 0) StartSectors.Add(obj);
+
+                if (UseDatabase)
+                {
+                    // utwórz punkt w bazie danych
+                    db.CreateSpaceSector(obj);
+                }
+
+                if (last != null)
+                {
+                    CreateSectorsConnection(last, obj);
+                }
+                last = obj;
+            }
         }
 
         return obj;
@@ -181,6 +262,62 @@ public class GraphContainer : MonoBehaviour
         return System || Connection;
     }
     //---------------------
+
+
+    public bool AddNewSectorSeparationMod(Player player)
+    {
+        bool System = false;
+        bool Connection = false;
+
+        // sprawdź planety i połączenia
+        foreach (var sys in player.SystemList)
+        {
+            foreach (var con in sys.ConnectionsList)
+            {
+                SpaceSystem SystemToCheck = null;
+
+                if (con.GetComponent<Connection>().Sys1 == sys)
+                {
+                    SystemToCheck = con.GetComponent<Connection>().Sys2;
+                }
+                else if (con.GetComponent<Connection>().Sys2 == sys)
+                {
+                    SystemToCheck = con.GetComponent<Connection>().Sys1;
+                }
+
+
+                if (!player.SystemList.Contains(SystemToCheck))
+                {
+                    if (!System)
+                    {
+                        player.SystemList.Add(SystemToCheck);
+                        System = true;
+                        if (!player.ConnectionList.Contains(con.GetComponent<Connection>()))
+                        {
+                            player.ConnectionList.Add(con.GetComponent<Connection>());
+                            Connection = true;
+                        }
+                        break;
+                    }
+                }
+                else
+                {
+                    if (!player.ConnectionList.Contains(con.GetComponent<Connection>()))
+                    {
+                        player.ConnectionList.Add(con.GetComponent<Connection>());
+                        Connection = true;
+                        System = true;
+                        break;
+                    }
+                }
+            }
+            if (Connection && System)
+            { break; }
+        }
+        return System || Connection;
+    }
+    //---------------------
+
 
     public void MapGeneration1(int SectorNumber)
     {
@@ -329,21 +466,21 @@ public class GraphContainer : MonoBehaviour
     }
 
     // utwórz połączenie pomiędzy dwoma planetami
-    private GameObject CreateConnection(GameObject loc1, GameObject loc2)
+    private GameObject CreateConnection(GameObject loc1, GameObject loc2, GameObject Sector1, GameObject Sector2)
     {
         Vector3 newPos = (loc1.transform.position + loc2.transform.position) / 2;
         GameObject conn = Instantiate(Connection, newPos, new Quaternion(0, 0, 0, 0));
         
         conn.transform.SetParent(gameObject.transform, false);
-        conn.GetComponent<Connection>().Planet1 = loc1;
-        conn.GetComponent<Connection>().Planet2 = loc2;
-        conn.GetComponent<Connection>().Init();
+        //conn.GetComponent<Connection>().Planet1 = loc1;
+        //conn.GetComponent<Connection>().Planet2 = loc2;
+        conn.GetComponent<Connection>().Init(loc1,loc2, Sector1, Sector2);
         ConnectionsList.Add(conn);
         
-        if(!conn.GetComponent<Connection>().Sys1.ConnectionsList.Contains(conn))
-            conn.GetComponent<Connection>().Sys1.ConnectionsList.Add(conn);
-        if (!conn.GetComponent<Connection>().Sys2.ConnectionsList.Contains(conn))
-            conn.GetComponent<Connection>().Sys2.ConnectionsList.Add(conn);
+        //if(!conn.GetComponent<Connection>().Sys1.ConnectionsList.Contains(conn))
+        //    conn.GetComponent<Connection>().Sys1.ConnectionsList.Add(conn);
+        //if (!conn.GetComponent<Connection>().Sys2.ConnectionsList.Contains(conn))
+        //    conn.GetComponent<Connection>().Sys2.ConnectionsList.Add(conn);
 
         //loc1.GetComponent<SpaceSystem>().ConnectionsList.Add(conn);
         //loc2.GetComponent<SpaceSystem>().ConnectionsList.Add(conn);
@@ -372,9 +509,9 @@ public class GraphContainer : MonoBehaviour
             // utwórz punkt w bazie danych
             db.CreateSectorConnection(Sector1, Sector2);
         }
-        GameObject conection = CreateConnection(conn1, conn2);
-        Sector1.GetComponent<SpaceSystem>().ConnectionsList.Add(conection);
-        Sector2.GetComponent<SpaceSystem>().ConnectionsList.Add(conection);
+        GameObject conection = CreateConnection(conn1, conn2, Sector1, Sector2);
+        //Sector1.GetComponent<SpaceSystem>().ConnectionsList.Add(conection);
+        //Sector2.GetComponent<SpaceSystem>().ConnectionsList.Add(conection);
         return conection;
     }
 
@@ -561,7 +698,10 @@ public class GraphContainer : MonoBehaviour
             default://left,down
                 { tmp = new Vector3(X.x - XSectorDistance, Random.Range(-3, 3) * YSectorDistance); break; }
         }
+        
         int Points = gameLogic.MeanPlayersWinPoints();
+        //int Points = gameLogic.MedianaWinPoints();
+
         Debug.LogError(Points);
         GameObject obj = CreateSpaceSystem(tmp);
         obj.GetComponent<SpaceSystem>().CreateSystem();
@@ -585,6 +725,7 @@ public class GraphContainer : MonoBehaviour
 
                     if (Points - WinPoints >= 0)
                     {
+                        if(planet.GetComponent<Planet>())
                         if (planet.GetComponent<Planet>().OwnerNumber == -1)
                         {
                             if (planet.GetComponent<Planet>().OwnerNumber != player.PlayerNr)

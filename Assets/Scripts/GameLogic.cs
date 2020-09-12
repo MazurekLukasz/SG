@@ -23,7 +23,7 @@ public class GameLogic : MonoBehaviour
     public GameObject MessageBox;
     private string logText;
     // licznik tur
-    float turnsCounter = 1;
+    public float turnsCounter = 1;
     // Panele planet
     [SerializeField] private GameObject CityPanel;
     [SerializeField] private GameObject MinePanel;
@@ -51,6 +51,16 @@ public class GameLogic : MonoBehaviour
 
     [SerializeField]  ClampPanel PanelLogic;
     [SerializeField] GameObject PlusIcon;
+
+    public GameObject kurtyna;
+
+    public static GameLogic Instance;
+
+    private void Awake()
+    {
+        Instance = this;
+    }
+
     void Start()
     {
         PlayersCount = namesHolder.PlayerNumber();
@@ -60,8 +70,8 @@ public class GameLogic : MonoBehaviour
             UnityEngine.SceneManagement.SceneManager.LoadScene("MainMenu");
         }
 
-        graph.Initialize(PlayersCount);
         namesHolder.InitPlayers();
+        graph.Initialize(PlayersCount);
         namesHolder.SetStartPositions(graph);
 
         currentPlayer = namesHolder.ReturnNextPlayer().GetComponent<Player>();
@@ -72,6 +82,14 @@ public class GameLogic : MonoBehaviour
         string str = graph.db.Query("match (n:SpaceSystem) return min(n.x),max(n.x),min(n.y),max(n.y)");
         Debug.Log(str); //string str = db.Query("match (n:SpaceSystem) return min(n.x),max(n.x),min(n.y),max(n.y)");
         maxTurns.text = "/"+ (namesHolder.GetTurnLimit());
+
+        foreach (var item in namesHolder.PlayerList)
+        {
+            Debug.LogWarning(""+ item.GetComponent<Player>().Tactics);
+        }
+
+
+        setKurtyna();
     }
 
     bool Ended = false;
@@ -83,7 +101,7 @@ public class GameLogic : MonoBehaviour
             return;
         }
 
-        if (!currentPlayer.GetComponent<Player>().Bot)
+        if (!currentPlayer.Bot)
         {
             if (!Pause)
             {
@@ -355,9 +373,10 @@ public class GameLogic : MonoBehaviour
         //txt[4].text = ""; - actions
 
         // cost of ship upgrade
+        //Debug.LogError("refresh");
         if (SelectedObject.GetComponent<MotherPlanet>().IsPawnHere())
         {
-            if (SelectedObject.GetComponent<MotherPlanet>().GetPawn().Player == currentPlayer)
+            if (SelectedObject.GetComponent<MotherPlanet>().GetPawn().Player == currentPlayer.gameObject)
             {
                 if (SelectedObject.GetComponent<MotherPlanet>().GetPawn().power < 5)
                 {
@@ -444,11 +463,33 @@ public class GameLogic : MonoBehaviour
         }
     }  // analogicznie dla MINE PANEL [BUTTON]
 
+    public void UpgradeSpaceShipBot()
+    {
+        if (currentPlayer.GetComponent<Player>().ReturnPawn().GetComponent<Pawn>().power < 5)
+        {
+            if (currentPlayer.GetComponent<Player>().goldAmount >= currentPlayer.ReturnPawn().GetComponent<Pawn>().ReturnUpgradeCost()
+                && currentPlayer.GetComponent<Player>().QuestPoints >= 1)
+            {
+                currentPlayer.GetComponent<Player>().goldAmount = -currentPlayer.GetComponent<Player>().ReturnPawn().GetComponent<Pawn>().ReturnUpgradeCost();
+                currentPlayer.GetComponent<Player>().QuestPoints--;
+                currentPlayer.ReturnPawn().GetComponent<Pawn>().power++;
+
+                //cash_sound.Play();
+                //RefreshCityPanel();
+                UpdateLogs();
+            }
+            else
+            {
+
+            }
+        }
+    }
+
     public void UpgradeSpaceShip()
     {
         if (SelectedObject.GetComponent<MotherPlanet>().IsPawnHere())
         {
-            if (SelectedObject.GetComponent<MotherPlanet>().GetPawn().Player == currentPlayer)
+            if (SelectedObject.GetComponent<MotherPlanet>().GetPawn().Player == currentPlayer.gameObject)
             {
                 if (SelectedObject.GetComponent<MotherPlanet>().GetPawn().power < 5)
                 {
@@ -485,43 +526,74 @@ public class GameLogic : MonoBehaviour
 
     public void Research() 
     {// badanie kosmosu, czyli dobudowanie nowego systemu
-
-        if (!currentPlayer.Bot)
+        if (NamesHolder.mapMode == MapMode.separate)
         {
+            //================
             if (SelectedObject.GetComponent<MotherPlanet>().civilizationLevel < 2)
+            { return; }
+            if (currentPlayer.GetComponent<Player>().QuestPoints > 0 && currentPlayer.GetComponent<Player>().goldAmount >= 500)
             {
-                error.Play();
-                ShowMessage(3f, "You need to have civilisation level equal or higher than 2.");
-                return;
-            }
-        }
-       
-
-        if (currentPlayer.GetComponent<Player>().QuestPoints > 0 && currentPlayer.GetComponent<Player>().goldAmount >= 500)
-        {
-            while (true)
-            {
-                if (graph.AddNewSector(currentPlayer))
+                if (graph.AddNewSectorSeparationMod(currentPlayer))
                 {
                     currentPlayer.GetComponent<Player>().QuestPoints--;
                     currentPlayer.GetComponent<Player>().goldAmount = -500;
-                    cash_sound.Play();
+                    //cash_sound.Play();
                     ResetPlanetAvailability();
                     UpdateLogs();
-
+                }
+                else
+                {
                     if (!currentPlayer.Bot)
-                    { ShowMessage(2f, "New space system founded."); }
-
-                    break;
+                    {
+                        error.Play();
+                        ShowMessage(3f, "You already discovered all map.");
+                    }
                 }
             }
+
+
+
         }
-        else
+        else if(NamesHolder.mapMode == MapMode.normal || NamesHolder.mapMode == MapMode.shared )
         {
-            if (!currentPlayer.Bot)
+            if (SelectedObject.GetComponent<MotherPlanet>().civilizationLevel < 2)
             {
-                ShowMessage(2f, "You don't have any action points or enough amount of gold!");
-                error.Play();
+                if (!currentPlayer.Bot)
+                {
+                    error.Play();
+                    ShowMessage(3f, "You need to have civilisation level equal or higher than 2.");
+                }
+                return;
+            }
+
+            if (currentPlayer.GetComponent<Player>().QuestPoints > 0 && currentPlayer.GetComponent<Player>().goldAmount >= 500)
+            {
+                while (true)
+                {
+                    if (graph.AddNewSector(currentPlayer))
+                    {
+                        currentPlayer.GetComponent<Player>().QuestPoints--;
+                        currentPlayer.GetComponent<Player>().goldAmount = -500;
+                        cash_sound.Play();
+                        ResetPlanetAvailability();
+                        UpdateLogs();
+
+                        if (!currentPlayer.Bot)
+                        { ShowMessage(2f, "New space system founded."); }
+
+                        break;
+                    }
+                }
+                Debug.LogError("found new system");
+            }
+            else
+            {
+                Debug.LogError("bot cannot research, gold: " + currentPlayer.goldAmount + "quest points: " + currentPlayer.QuestPoints);
+                if (!currentPlayer.Bot)
+                {
+                    ShowMessage(2f, "You don't have any action points or enough amount of gold!");
+                    error.Play();
+                }
             }
         }
     }
@@ -534,11 +606,11 @@ public class GameLogic : MonoBehaviour
         bool bot = false;
             string str = item.GetComponentInChildren<InputField>().text;
             if (str != "")
-            namesHolder.Add(str, bot);
+            namesHolder.Add(str, bot,Strategy.casual);
             else
-                namesHolder.Add("Unknown", bot);
+                namesHolder.Add("Unknown", bot, Strategy.casual);
 
-        namesHolder.AddPlayer(PlayersCount, bot);
+        namesHolder.AddPlayer(PlayersCount, bot, Strategy.casual);
         PlayersCount = namesHolder.PlayerNumber();
 
         if (NewPlayerOption.value == 0)
@@ -582,11 +654,11 @@ public class GameLogic : MonoBehaviour
 
         string str = s;
         if (str != "")
-            namesHolder.Add(str, bot);
+            namesHolder.Add(str, bot, Strategy.casual);
         else
-            namesHolder.Add("Unknown", bot);
+            namesHolder.Add("Unknown", bot, Strategy.casual);
 
-        namesHolder.AddPlayer(PlayersCount, bot);
+        namesHolder.AddPlayer(PlayersCount, bot, Strategy.casual);
         PlayersCount = namesHolder.PlayerNumber();
 
         if (method == 0)
@@ -630,10 +702,10 @@ public class GameLogic : MonoBehaviour
         bool bot = false;
         string str = item.GetComponentInChildren<InputField>().text;
         if (str != "")
-            namesHolder.Add(str,false);
+            namesHolder.Add(str,false, Strategy.casual);
         else
-            namesHolder.Add("Unknown",false);
-        namesHolder.AddPlayer(PlayersCount,bot);
+            namesHolder.Add("Unknown",false, Strategy.casual);
+        namesHolder.AddPlayer(PlayersCount,bot, Strategy.casual);
         PlayersCount = namesHolder.PlayerNumber();         // gracz dodany
 
         graph.CreateSpaceForStrongPlayer();
@@ -728,6 +800,7 @@ public class GameLogic : MonoBehaviour
         EndTurnPause = true;
         trybuild = true;
         tryMove = true;
+        tryFight = true;
         ForceResearch = false;
         // jeśli ostatni gracz kończy turę to należy zwiększyć licznik tur
         if (namesHolder.CheckForLastPlayer(currentPlayer.gameObject))
@@ -743,6 +816,7 @@ public class GameLogic : MonoBehaviour
                 AddGoldForPlayers();
             }
 
+            if(!Ended)
             CheckForNewPlayer();
         }
         // należy zaznaczyć, że obecny gracz już nie jest aktywny
@@ -763,6 +837,9 @@ public class GameLogic : MonoBehaviour
         currentPlayer.GetComponent<Player>().IsActive = true;
         Cam.GetComponent<CameraMovement>().ChangePosition(currentPlayer.GetComponent<Player>().ReturnPawn().transform);
         currentPlayer.GetComponent<Player>().RestartPoints();
+
+        setKurtyna();
+
         ResetPlanetAvailability();
         UnselectSelectedObject();
         cityIdx = 0;
@@ -775,6 +852,18 @@ public class GameLogic : MonoBehaviour
         else
             PlusIcon.SetActive(false);
     } // zmiana gracza
+
+    void setKurtyna()
+    {
+        if (currentPlayer.GetComponent<Player>().Bot)
+        {
+            kurtyna.SetActive(true);
+        }
+        else
+        {
+            kurtyna.SetActive(false);
+        }
+    }
 
     void ResetPlanetAvailability()
     {
@@ -880,9 +969,55 @@ public class GameLogic : MonoBehaviour
             }
         }
     }
+    public int MedianaWinPoints()
+    {
+        CalculateWinPoints();
+        List<int> power = new List<int>();
+        foreach (var item in namesHolder.ActivePlayerList)
+        {
+            if(item.GetComponent<Player>().WinPoints != 0)
+            power.Add(item.GetComponent<Player>().WinPoints);
+        }
+
+        int n = power.Count;
+
+        do
+        {
+            for (int i = 0; i < n - 1; i++)
+            {
+                if (power[i] > power[i + 1])
+                {
+                    int tmp = power[i + 1];
+                    power[i + 1] = power[i];
+                    power[i] = tmp;
+                }
+            }
+            n = n - 1;
+        } while (n > 1);
+
+        foreach (var item in power)
+        {
+            Debug.LogWarning("power: "+ item);
+        }
+
+        n = power.Count;
+        if (n % 2 != 1)// liczba parzysta
+        {
+            Debug.LogWarning("NEW power (parzyste): " + (int)(n / 2) + "    "+ ((int)(n / 2) - 1));
+            return (power[(n / 2)] + power[(n / 2)-1])/2;
+        }
+        else//nieparzysta
+        {
+            int a = n / 2;
+            Debug.LogWarning("nieparz... powerwww: " +a);
+            Debug.LogWarning("nieparz... power: " + power[a]); // bo od zera się liczy
+            return power[a+1];
+        }
+    }
 
     public int MeanPlayersWinPoints(int playerNr = -1)// player which not should be used
     {
+        CalculateWinPoints();
         int points = 0;
         foreach (var player in namesHolder.ActivePlayerList)
         {
@@ -933,20 +1068,23 @@ public class GameLogic : MonoBehaviour
     // ---------------------------------------------
     void EndGame()
     {
+        kurtyna.SetActive(false);
+
         Ended = true;
 
-        foreach (var item in namesHolder.ActivePlayerList)
+        foreach (var item in namesHolder.PlayerList)
         {
             item.GetComponent<Player>().WinPoints += (int)(item.GetComponent<Player>().goldAmount/1000);
             item.GetComponent<Player>().WinPoints += (int)(item.GetComponent<Player>().PlanetList.Count / 20);
             item.GetComponent<Player>().WinPoints += (int)(item.GetComponent<Player>().SystemList.Count / 5);
+            item.GetComponent<Player>().WinPoints += (int)(item.GetComponent<Player>().ReturnPawn().GetComponent<Pawn>().power);
         }
         ScrollRect rect = EndGamePanel.GetComponentInChildren<ScrollRect>();
 
         namesHolder.SortPlayer();
         int i = 1;
 
-        foreach (GameObject Player  in namesHolder.ActivePlayerList)
+        foreach (GameObject Player  in namesHolder.PlayerList)
         {
             GameObject obj = Instantiate(EndPlayerPanel, rect.content.transform, false) as GameObject;
             rect.content.ForceUpdateRectTransforms();
@@ -970,9 +1108,16 @@ public class GameLogic : MonoBehaviour
             tmp[1].text = "" + Player.GetComponent<Player>().WinPoints;
             Image[] imgs = obj.GetComponentsInChildren<Image>();
             imgs[2].color = Player.GetComponent<Player>().PlayerColor(Player.GetComponent<Player>().PlayerNr);
+
+            if (!namesHolder.ActivePlayerList.Contains(Player))
+            {
+                obj.GetComponent<EndGamePlayerPanel>().PlayerDeath(Player.GetComponent<Player>().DeathTurn);
+                tmp[1].text = "" + 0;
+            }
+
             i++;
         }
-
+        kurtyna.SetActive(false);
         EndGamePanel.SetActive(true);
     }
 
@@ -1025,9 +1170,10 @@ public class GameLogic : MonoBehaviour
     //    }
     //}
     //bool Waiting = false;
-    bool Builder = true;
     bool trybuild = true;
     bool tryMove = true;
+    bool tryUpgradeShip = false;
+    bool tryFight = true;
     bool ShowBotsMoves = false;
 
     public void Botcontrol()
@@ -1055,12 +1201,11 @@ public class GameLogic : MonoBehaviour
             return;
         }
 
-        if (Builder)// just ignore for now .... (BUILDER -  priority is to build, and then research for other places, no care of the enemy)
+        if (currentPlayer.Tactics == Strategy.builder || currentPlayer.Tactics == Strategy.explorer)
         {
 
             if (trybuild)
             {
-                Debug.LogError("1");
                 if (ForceResearch)
                 {
                     AIResearch(currentPlayer.PlanetList[0]);
@@ -1068,12 +1213,46 @@ public class GameLogic : MonoBehaviour
 
                     if (!StillCanBuild() || currentPlayer.QuestPoints <= 0)
                     { trybuild = false; }
-                    
+
                 }
                 else
                 {
-                    TryToBuild();
-                    Debug.LogError("after build");
+                    BuildMode();
+                }   
+            }
+
+            if (!trybuild)
+            {
+                if (tryMove)
+                {
+                    GoTakeNewPlanet();
+                }
+            }
+
+
+            if ((!StillCanBuild() || currentPlayer.QuestPoints <= 0) && !ForceResearch)
+            {
+                trybuild = false;
+            }
+        }
+        else if (currentPlayer.Tactics == Strategy.casual)
+        {
+
+            if (trybuild)
+            {
+                if (ForceResearch)
+                {
+                    Debug.LogError("Force research");
+                    AIResearch(currentPlayer.PlanetList[0]);
+                    ForceResearch = false;
+
+                    if (!StillCanBuild() || currentPlayer.QuestPoints <= 0)
+                    { trybuild = false; }
+
+                }
+                else
+                {
+                    BuildMode();
                 }
             }
 
@@ -1082,13 +1261,134 @@ public class GameLogic : MonoBehaviour
                 GoTakeNewPlanet();
             }
 
-            if (!StillCanBuild() || currentPlayer.QuestPoints <= 0)
+
+
+            if ((!StillCanBuild() || currentPlayer.QuestPoints <= 0 ) && !ForceResearch)
             {
                 trybuild = false;
             }
         }
+        else if (currentPlayer.Tactics == Strategy.warrior)
+        {
+            if (tryFight)
+            {
+                AttackEnemy();
+            }
+
+            Debug.LogError(tryFight);
+
+            if (!tryFight)
+            {
+                if (trybuild)
+                {
+                    if (ForceResearch)
+                    {
+                        AIResearch(currentPlayer.PlanetList[0]);
+                        ForceResearch = false;
+
+                        if (!StillCanBuild() || currentPlayer.QuestPoints <= 0)
+                        { trybuild = false; }
+                    }
+                    else
+                    {
+                        BuildMode();
+                    }
+                }
+
+                if (tryMove)
+                {
+                    GoTakeNewPlanet();
+                }
+            }
+
+            if ((!StillCanBuild() || currentPlayer.QuestPoints <= 0) && !ForceResearch)
+            {
+                trybuild = false;
+            }
+        }
+
         Debug.LogError(trybuild + " : " +tryMove);
         Debug.LogError("path :" + currentPlayer.ReturnPawn().GetComponent<Pawn>().TargetPath.Count);
+    }
+
+    void AttackEnemy()
+    {
+        if (currentPlayer.ReturnPawn().GetComponent<Pawn>().TargetPath.Count > 0)
+        {// go to enemy
+            List<GameObject> path = currentPlayer.ReturnPawn().GetComponent<Pawn>().TargetPath;
+            // pionek z ostatniej planety
+            Pawn pawn = path[path.Count - 1].GetComponent<Location>().GetPawn();
+            
+            if (pawn != null)
+            {
+                if (pawn.GetComponent<Pawn>().Player.GetComponent<Player>().PlayerNr != currentPlayer.PlayerNr)
+                {// jeśli ten pionek to inny gracz
+                    if (currentPlayer.ReturnPawn().GetComponent<Pawn>().GetActionPoints() > 0)
+                    {// mam jakieś pkt ruchu
+                        if (currentPlayer.ReturnPawn().GetComponent<Pawn>().TargetPath[0] != null)
+                        {// a to nie wiem po co ten 'if'
+                            PawnMove(currentPlayer.ReturnPawn(), currentPlayer.ReturnPawn().GetComponent<Pawn>().TargetPath[0]);
+                            currentPlayer.ReturnPawn().GetComponent<Pawn>().TargetPath.RemoveAt(0);// podszedłem planetę dalej do celu
+                            Debug.LogError("");
+                        }
+                    }
+                    else
+                    {
+                        tryFight = false;
+                    }
+                }
+            }
+            else
+            {// wyczyść ścieżkę, poszukam nowej
+                currentPlayer.ReturnPawn().GetComponent<Pawn>().TargetPath.Clear();
+            }
+        }
+        else
+        {
+            Location planet = LookForOponent();
+            if (planet != null)
+            {// enemy finded
+                List<GameObject> tmp = FindTheWay(currentPlayer.ReturnPawn().GetComponent<Pawn>().ReturnCurrentPlanet().GetComponent<Location>(), planet);
+                if (tmp == null)
+                {
+                    tryFight = false;
+                    return;
+                }
+                if (tmp.Count <= 0)
+                {
+                    tryFight = false;
+                    return;
+                }
+                else
+                {
+                    currentPlayer.ReturnPawn().GetComponent<Pawn>().TargetPath = tmp;
+                }
+            }
+            else
+            {
+                tryFight = false;
+            }
+        }
+    }
+
+    Location LookForOponent()
+    {
+        foreach (var sys in currentPlayer.SystemList)
+        {
+            foreach (var planet in sys.PlanetsList)
+            {
+                Pawn pawn = planet.GetComponent<Location>().GetPawn();
+
+                if (pawn != null)
+                {
+                    if(currentPlayer.PlayerNr != pawn.Player.GetComponent<Player>().PlayerNr)
+                    {
+                        return planet.GetComponent<Location>();
+                    }
+                }
+            }
+        }
+        return null;
     }
 
     private bool WaitUntilLastActionLasts()
@@ -1104,61 +1404,203 @@ public class GameLogic : MonoBehaviour
         // true- action lasts
     }
     bool ForceResearch = false;
-    void TryToBuild()
+
+    GameObject WhatToBuild()
+    {
+        foreach (GameObject planet in currentPlayer.PlanetList)
+        {
+            if (planet.GetComponent<MotherPlanet>())
+            {
+                if (planet.GetComponent<MotherPlanet>().ReturnCivilizationCost() != 0)
+                {
+                    if (planet.GetComponent<MotherPlanet>().ReturnCivilizationCost() <= currentPlayer.goldAmount)
+                    {
+                        return planet;
+                    }
+                }
+            }
+            else if (planet.GetComponent<MinePlanet>())
+            {
+                if (planet.GetComponent<MinePlanet>().ReturnUpgradeCost() != 0)
+                {
+                    if (planet.GetComponent<MinePlanet>().ReturnUpgradeCost() <= currentPlayer.goldAmount)
+                    {
+                        return planet;
+                    }
+                }
+            }
+        }
+
+        if (CheckIfBotCanResearch())
+        {
+            Debug.LogError("try research");
+            ForceResearch = true;
+        }
+        else
+        {
+            trybuild = false;
+        }
+
+        return null;
+    }
+
+    void BuildMode()
     {
         if (currentPlayer.QuestPoints <= 0 || !StillCanBuild())
         {
             trybuild = false;
             return;
         }
-        //while(currentPlayer.QuestPoints > 0 && StillCanBuild())
-        //{
-        foreach (GameObject planet in currentPlayer.PlanetList)
+
+        GameObject planet = WhatToBuild();
+
+        if (planet != null)
+        {
+            if (planet.GetComponent<MotherPlanet>())
             {
+                if (planet.GetComponent<MotherPlanet>())
+                {
+                    int treshold1 = 0;
+                    int treshold2 = 0;
+
+                    if (currentPlayer.Tactics == Strategy.casual)
+                    {
+                        treshold1 = 4;
+                        treshold2 = 8;
+                    }
+                    else if (currentPlayer.Tactics == Strategy.builder)
+                    {
+                        treshold1 = 7;
+                        treshold2 = 9;
+                    }
+                    else if (currentPlayer.Tactics == Strategy.explorer)
+                    {
+                        treshold1 = 3;
+                        treshold2 = 9;
+                    }
+                    else if (currentPlayer.Tactics == Strategy.warrior)
+                    {
+                        treshold1 = 3;
+                        treshold2 = 6;
+
+                        if (currentPlayer.ReturnPawn().GetComponent<Pawn>().power >= 5)
+                        {
+                            treshold1 = 5;
+                            treshold2 = 10;
+                        }
+                    }
+
+                    int x = Random.Range(1, 11);
+
+                    if (x <= treshold1)// build, upgrade
+                    {
+                        AICivilUpgrade(planet);
+                    }// build
+                    else if(x> treshold1 && x <= treshold2)
+                    {
+                        // research, if not - build
+                        if (CheckIfBotCanResearch())
+                        {
+                            AIResearch(planet);
+                        }
+                        else
+                        {
+                            AICivilUpgrade(planet);
+
+                        }
+                    }
+                    else if(x > treshold2)
+                    {
+                        UpgradeSpaceShipBot();
+                    }
+                }
+                //if (planet.GetComponent<MotherPlanet>().ReturnCivilizationCost() != 0)
+                //{
+                //    if (planet.GetComponent<MotherPlanet>().ReturnCivilizationCost() <= currentPlayer.goldAmount)
+                //    {
+                //        AICivilUpgrade(planet);
+                //    }
+                //}
+            }
+            else if (planet.GetComponent<MinePlanet>())
+            {
+                if (planet.GetComponent<MinePlanet>().ReturnUpgradeCost() != 0)
+                {
+                    if (planet.GetComponent<MinePlanet>().ReturnUpgradeCost() <= currentPlayer.goldAmount)
+                    {
+                        AIMineUpgrade(planet);
+                    }
+                }
+            }
+        }
+        else
+        {
+            Debug.LogError("nothing to build");
+            //if (CheckIfBotCanResearch())
+            //{
+            //    Debug.LogError("try research");
+            //    ForceResearch = true;
+            //}
+            //trybuild = false;
+        }
+    }
+
+    // ========== OLD ==========
+    void TryToBuild()
+    {
+        foreach (GameObject planet in currentPlayer.PlanetList)
+        {
             if (currentPlayer.QuestPoints <= 0 || !StillCanBuild())
             {
                 trybuild = false;
                 return;
             }
-            if (planet.GetComponent<MotherPlanet>() || planet.GetComponent<MinePlanet>())
+            else
             {
-                    if (planet.GetComponent<Planet>().OwnerNumber == currentPlayer.PlayerNr)
-                    {
-                        if (planet.GetComponent<MotherPlanet>())
-                        {
-                            int x = Random.Range(0, 11);
-
-                            if (x > 0 && x < 4)
-                            {
-                                if (CheckIfBotCanResearch())
-                                {
-                                    AIResearch(planet);
-                                }
-                                else
-                                {
-                                    AICivilUpgrade(planet);
-                                }
-                            }
-                            else
-                                AICivilUpgrade(planet);
-                        }
-                        else if (planet.GetComponent<MinePlanet>())
-                        {
-                            AIMineUpgrade(planet);
-                        }
-                    }
+                Debug.LogError("quest points " + currentPlayer.QuestPoints +" ,can build "+ StillCanBuild());
             }
 
-                Debug.LogError("s");
-            //}
-            Debug.LogError("g");
+            if (planet.GetComponent<MotherPlanet>() || planet.GetComponent<MinePlanet>())
+            {
+                if (planet.GetComponent<Planet>().OwnerNumber == currentPlayer.PlayerNr)
+                {
+                    if (planet.GetComponent<MotherPlanet>())
+                    {
+                        int x = Random.Range(0, 11);
+
+                        int treshold = 0;
+                        if (currentPlayer.Tactics == Strategy.explorer)treshold = 6;
+                        else treshold = -1; // builder - always build, and then build
+
+
+                        if (x < treshold)
+                        {// research
+                            if (CheckIfBotCanResearch())
+                            {
+                                AIResearch(planet);
+                                Debug.LogError("3");
+                            }
+                            else
+                            {
+                                Debug.LogError("2");
+                                AICivilUpgrade(planet);
+                                Debug.LogError("2");
+                            }
+                        }// build
+                        else
+                        {
+                            AICivilUpgrade(planet);
+                            Debug.LogError("4");
+                        }
+                    }
+                    else if (planet.GetComponent<MinePlanet>())
+                    {
+                        AIMineUpgrade(planet);
+                        Debug.LogError("1");
+                    }
+                }
+            }
         }
-        //if (currentPlayer.QuestPoints <= 0 || !StillCanBuild())
-        //{
-        //    trybuild = false;
-        //    return;
-        //}
-        
     }
 
     public void AIMineUpgrade(GameObject planet)

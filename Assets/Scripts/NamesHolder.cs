@@ -3,14 +3,18 @@ using System.Collections.Generic;
 using UnityEngine;
 using static PlayerPanel;
 
+public enum MapMode { normal=0,separate=1, shared=2}
+
 // klasa służy jako pojemnik do przechowywania nazw oraz graczy
 public class NamesHolder : MonoBehaviour
 {
     // STATYCZNA lista nazw graczy, przez nią w scenie 1 wiemy ile utworzyć graczy oraz jak się nazywają
     public static List<string> PlayerNames = new List<string>();
     public static List<bool> PlayerBot = new List<bool>();
+    public static List<Strategy> PlayersStrategy = new List<Strategy>();
     static int TurnLimit;
 
+    public static MapMode mapMode;
     public static List<PlayerData> PlayersToActivateLater = new List<PlayerData>();
 
     // Lista graczy, tutaj są przechowywane wskaźniki do niech
@@ -19,6 +23,7 @@ public class NamesHolder : MonoBehaviour
 
     // Tutaj pole dla Prefab-u gracza, wstawiany w edytorze
     [SerializeField] private GameObject PlayerPref;
+
 
     public List<string> GetPlayerNames()
     {
@@ -48,10 +53,11 @@ public class NamesHolder : MonoBehaviour
         return TurnLimit;
     }
     // dodaj nazwę do listy nazw graczy, funkcja jest potrzebna w menu głównym gry
-    public void Add(string str, bool bot)
+    public void Add(string str, bool bot, Strategy st)
     {
         PlayerNames.Add(str);
         PlayerBot.Add(bot);
+        PlayersStrategy.Add(st);
     }
 
     // test, wypisanie nazw graczy
@@ -71,17 +77,18 @@ public class NamesHolder : MonoBehaviour
         int i = 0;
         foreach (string item in PlayerNames)
         {
-            AddPlayer(i,PlayerBot[i]);
+            AddPlayer(i,PlayerBot[i],PlayersStrategy[i]);
             i++;
         }
     }
 
-    public void AddPlayer(int i, bool bot)
+    public void AddPlayer(int i, bool bot, Strategy tat)
     {
         GameObject tmp = Instantiate(PlayerPref);
         tmp.transform.SetParent(gameObject.transform, false);
         tmp.GetComponent<Player>().PlayerNr = i;
         tmp.GetComponent<Player>().Bot = bot;
+        tmp.GetComponent<Player>().Tactics = tat;
         PlayerList.Add(tmp);
         ActivePlayerList.Add(tmp);
     }
@@ -89,20 +96,41 @@ public class NamesHolder : MonoBehaviour
     // Ustawienie początkowych pozycji dla graczy, jako wartość wejściową potrzebuje Pojemnika na graf, Wywoływana z klasy MASTER
     public void SetStartPositions(GraphContainer graph)
     {
-        int i = 0;
-        foreach (var player in PlayerList)
+        if (mapMode == MapMode.normal || mapMode == MapMode.shared)
         {
-            // utwórz pionek dla gracza
-            player.GetComponent<Player>().Init();
-            player.GetComponent<Player>().CreatePawn(graph.GetPlanet(i).transform.position);
-            player.GetComponent<Player>().PlanetList.Add(graph.GetPlanet(i));
-            //player.GetComponent<Player>().MotherPlanetList.Add(graph.GetPlanet(i).GetComponent<MotherPlanet>());
-            player.GetComponent<Player>().SystemList.Add(graph.GetPlanet(i).GetComponentInParent<SpaceSystem>());
-            // ---------------------------------- ustaw pionek na odpowiedniej planecie
-            player.GetComponent<Player>().SetStartPlanet(graph.GetPlanet(i));
+            int i = 0;
+            foreach (var player in PlayerList)
+            {
+                // utwórz pionek dla gracza
+                player.GetComponent<Player>().Init();
+                player.GetComponent<Player>().CreatePawn(graph.GetPlanet(i).transform.position);
+                player.GetComponent<Player>().PlanetList.Add(graph.GetPlanet(i));
+                //player.GetComponent<Player>().MotherPlanetList.Add(graph.GetPlanet(i).GetComponent<MotherPlanet>());
+                player.GetComponent<Player>().SystemList.Add(graph.GetPlanet(i).GetComponentInParent<SpaceSystem>());
+                // ---------------------------------- ustaw pionek na odpowiedniej planecie
+                player.GetComponent<Player>().SetStartPlanet(graph.GetPlanet(i));
 
-            i++;
+                i++;
+            }
         }
+        else if(mapMode == MapMode.separate)
+        {
+            int i = 0;
+            foreach (var player in PlayerList)
+            {
+                // utwórz pionek dla gracza
+                player.GetComponent<Player>().Init();
+                player.GetComponent<Player>().CreatePawn(graph.StartSectors[i].GetComponent<SpaceSystem>().PlanetsList[0].transform.position);
+                player.GetComponent<Player>().PlanetList.Add(graph.StartSectors[i].GetComponent<SpaceSystem>().PlanetsList[0]);
+                //player.GetComponent<Player>().MotherPlanetList.Add(graph.GetPlanet(i).GetComponent<MotherPlanet>());
+                player.GetComponent<Player>().SystemList.Add(graph.StartSectors[i].GetComponent<SpaceSystem>());
+                // ---------------------------------- ustaw pionek na odpowiedniej planecie
+                player.GetComponent<Player>().SetStartPlanet(graph.StartSectors[i].GetComponent<SpaceSystem>().PlanetsList[0]);
+
+                i++;
+            }
+        }
+
         
     }
 
@@ -181,18 +209,38 @@ public class NamesHolder : MonoBehaviour
     public void ClearPlayerList()
     {
         PlayerNames.Clear();
-    }
+
+        PlayerBot.Clear();
+        PlayersStrategy.Clear();
+        PlayersToActivateLater.Clear();
+}
 
     public void SortPlayer()
     {
-        for (int i = 0; i < ActivePlayerList.Count-1; i++)
+        for (int i = 0; i < PlayerList.Count-1; i++)
         {
-            for (int j = 0; j < ActivePlayerList.Count-1; j++)
+            for (int j = 0; j < PlayerList.Count-1; j++)
+            {
+                if (PlayerList[j].GetComponent<Player>().WinPoints < PlayerList[j + 1].GetComponent<Player>().WinPoints)
+                {
+                    GameObject tmp = PlayerList[j+1];
+                    PlayerList[j+1] = PlayerList[j];
+                    PlayerList[j] = tmp;
+                }
+            }
+        }
+    }
+
+    public void SortActivePlayer()
+    {
+        for (int i = 0; i < ActivePlayerList.Count - 1; i++)
+        {
+            for (int j = 0; j < ActivePlayerList.Count - 1; j++)
             {
                 if (ActivePlayerList[j].GetComponent<Player>().WinPoints < ActivePlayerList[j + 1].GetComponent<Player>().WinPoints)
                 {
-                    GameObject tmp = ActivePlayerList[j+1];
-                    ActivePlayerList[j+1] = ActivePlayerList[j];
+                    GameObject tmp = ActivePlayerList[j + 1];
+                    ActivePlayerList[j + 1] = ActivePlayerList[j];
                     ActivePlayerList[j] = tmp;
                 }
             }

@@ -15,6 +15,7 @@ public class PlayersManager : MonoBehaviour
     [SerializeField] private NamesHolder namesHolder;
     [SerializeField] ScrollRect rect;
     [SerializeField] Slider TurnSlider;
+    [SerializeField] Dropdown MapMode;
 
     private  List<GameObject> PlayersList = new List<GameObject>();
 
@@ -56,11 +57,12 @@ public class PlayersManager : MonoBehaviour
     //}
     public void InitPlayersNames()
     {
+        int LaterStartCounter = 0;
         foreach (GameObject item in PlayersList)
         {
             bool tmp = item.GetComponent<PlayerPanel>().GetData().LaterStart;
             int bot = item.GetComponent<PlayerPanel>().GetData().bot;
-            
+            Strategy st = item.GetComponent<PlayerPanel>().GetData().Tactic;
 
             string str = item.GetComponent<PlayerPanel>().GetData().name;
             if (str != "")
@@ -68,25 +70,69 @@ public class PlayersManager : MonoBehaviour
                 //Debug.LogError(item.GetComponentInChildren<Dropdown>().value == 0 ? false : true);
                 if (tmp)
                 {
+                    LaterStartCounter++;
                     namesHolder.AddToActiveLater(item.GetComponent<PlayerPanel>().GetData());
                 }
                 else
                 {
-                    namesHolder.Add(str, /*item.GetComponentInChildren<Dropdown>().value*/bot == 0 ? false : true);
+                    namesHolder.Add(str, /*item.GetComponentInChildren<Dropdown>().value*/bot == 0 ? false : true,st);
                 }
             }
             else
             {
                 if (tmp)
                 {
+                    LaterStartCounter++;
                     namesHolder.AddToActiveLater(item.GetComponent<PlayerPanel>().GetData());
                 }
                 else
-                    namesHolder.Add("Unknown", bot == 0 ? false : true);
+                    namesHolder.Add("Unknown", bot == 0 ? false : true,st);
 
             }
         }
 
         namesHolder.SetTurnLimit((int)TurnSlider.value);
+
+        if (MapMode.value == 0)
+            NamesHolder.mapMode = global::MapMode.normal;
+        else if (MapMode.value == 1) NamesHolder.mapMode = global::MapMode.separate;
+        else NamesHolder.mapMode = global::MapMode.shared;
+
     }
+
+
+    public Text Warning;
+    public InputField ip;
+    public InputField user;
+    public InputField pass;
+    public GameObject LogInPanel;
+    public GameObject MenuPanel;
+    public Toggle def;
+
+    public void LogIn()
+    {
+        string txt;
+        database db = FindObjectOfType<database>();
+
+        string ans = "";
+
+        if (!def.isOn)
+            ans = db.TestConnection(ip.textComponent.text,user.textComponent.text, pass.textComponent.text, out txt);
+        else
+            ans = db.TestConnection("localhost:7474", "neo4j", "1", out txt);
+
+
+        if (ans == "")
+        {
+            Warning.text = "Error. Try again later."; // = txt;
+ 
+        }
+        else
+        {
+            Warning.text =   "ok";
+            LogInPanel.SetActive(false);
+            MenuPanel.SetActive(true);
+        }
+    }
+
 }

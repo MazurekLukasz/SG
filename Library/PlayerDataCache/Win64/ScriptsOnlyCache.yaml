@@ -8,6 +8,7 @@ ScriptsOnlyBuild:
     - Circle
     - ClampPanel
     - Connection
+    - EndGamePlayerPanel
     - GameLogic
     - GraphContainer
     - Location
@@ -17,9 +18,12 @@ ScriptsOnlyBuild:
     - Pawn
     - Planet
     - Player
+    - PlayerPanel
     - PlayersManager
     - SliderText
     - SpaceSystem
+    - TextMoving
+    - database
     Unity.TextMeshPro.dll:
     - TMPro.TMP_FontAsset
     - TMPro.TMP_Settings
@@ -91,6 +95,8 @@ ScriptsOnlyBuild:
     - Class: 114
       Script: {instanceID: 9840}
     - Class: 114
+      Script: {instanceID: 9846}
+    - Class: 114
       Script: {instanceID: 9880}
     - Class: 114
       Script: {instanceID: 9978}
@@ -103,49 +109,57 @@ ScriptsOnlyBuild:
     - Class: 114
       Script: {instanceID: 10268}
     - Class: 114
-      Script: {instanceID: 10412}
+      Script: {instanceID: 10348}
     - Class: 114
-      Script: {instanceID: 10458}
+      Script: {instanceID: 10414}
     - Class: 114
-      Script: {instanceID: 10482}
+      Script: {instanceID: 10460}
     - Class: 114
-      Script: {instanceID: 10508}
+      Script: {instanceID: 10484}
     - Class: 114
-      Script: {instanceID: 10570}
+      Script: {instanceID: 10510}
     - Class: 114
-      Script: {instanceID: 10600}
+      Script: {instanceID: 10572}
     - Class: 114
-      Script: {instanceID: 10686}
+      Script: {instanceID: 10602}
     - Class: 114
-      Script: {instanceID: 10782}
+      Script: {instanceID: 10688}
     - Class: 114
-      Script: {instanceID: 10810}
+      Script: {instanceID: 10784}
     - Class: 114
-      Script: {instanceID: 10824}
+      Script: {instanceID: 10812}
     - Class: 114
-      Script: {instanceID: 10872}
+      Script: {instanceID: 10826}
     - Class: 114
-      Script: {instanceID: 10876}
+      Script: {instanceID: 10874}
     - Class: 114
-      Script: {instanceID: 10916}
+      Script: {instanceID: 10878}
     - Class: 114
-      Script: {instanceID: 10988}
+      Script: {instanceID: 10918}
     - Class: 114
-      Script: {instanceID: 11046}
+      Script: {instanceID: 10990}
     - Class: 114
-      Script: {instanceID: 11194}
+      Script: {instanceID: 11048}
     - Class: 114
-      Script: {instanceID: 11252}
+      Script: {instanceID: 11196}
     - Class: 114
-      Script: {instanceID: 11376}
+      Script: {instanceID: 11254}
     - Class: 114
-      Script: {instanceID: 11394}
+      Script: {instanceID: 11378}
     - Class: 114
-      Script: {instanceID: 11420}
+      Script: {instanceID: 11386}
     - Class: 114
-      Script: {instanceID: 11428}
+      Script: {instanceID: 11396}
     - Class: 114
-      Script: {instanceID: 11436}
+      Script: {instanceID: 11410}
+    - Class: 114
+      Script: {instanceID: 11422}
+    - Class: 114
+      Script: {instanceID: 11430}
+    - Class: 114
+      Script: {instanceID: 11438}
+    - Class: 114
+      Script: {instanceID: 11456}
     - Class: 115
       Script: {instanceID: 0}
     - Class: 120
@@ -208,51 +222,55 @@ ScriptsOnlyBuild:
     - Class: 114
       Script: {instanceID: 10248}
     - Class: 114
-      Script: {instanceID: 10364}
+      Script: {instanceID: 10366}
     - Class: 114
-      Script: {instanceID: 10412}
+      Script: {instanceID: 10414}
     - Class: 114
-      Script: {instanceID: 10458}
+      Script: {instanceID: 10460}
     - Class: 114
-      Script: {instanceID: 10484}
+      Script: {instanceID: 10486}
     - Class: 114
-      Script: {instanceID: 10492}
+      Script: {instanceID: 10494}
     - Class: 114
-      Script: {instanceID: 10508}
+      Script: {instanceID: 10510}
     - Class: 114
-      Script: {instanceID: 10570}
+      Script: {instanceID: 10572}
     - Class: 114
-      Script: {instanceID: 10600}
+      Script: {instanceID: 10602}
     - Class: 114
-      Script: {instanceID: 10672}
+      Script: {instanceID: 10674}
     - Class: 114
-      Script: {instanceID: 10686}
+      Script: {instanceID: 10688}
     - Class: 114
-      Script: {instanceID: 10782}
+      Script: {instanceID: 10784}
     - Class: 114
-      Script: {instanceID: 10810}
+      Script: {instanceID: 10812}
     - Class: 114
-      Script: {instanceID: 10876}
+      Script: {instanceID: 10878}
     - Class: 114
-      Script: {instanceID: 10916}
+      Script: {instanceID: 10918}
     - Class: 114
-      Script: {instanceID: 10988}
+      Script: {instanceID: 10990}
     - Class: 114
-      Script: {instanceID: 11046}
+      Script: {instanceID: 11048}
     - Class: 114
-      Script: {instanceID: 11210}
+      Script: {instanceID: 11212}
     - Class: 114
-      Script: {instanceID: 11252}
+      Script: {instanceID: 11254}
     - Class: 114
-      Script: {instanceID: 11376}
+      Script: {instanceID: 11378}
     - Class: 114
-      Script: {instanceID: 11384}
+      Script: {instanceID: 11386}
     - Class: 114
-      Script: {instanceID: 11394}
+      Script: {instanceID: 11396}
     - Class: 114
-      Script: {instanceID: 11408}
+      Script: {instanceID: 11410}
     - Class: 114
-      Script: {instanceID: 11436}
+      Script: {instanceID: 11438}
+    - Class: 114
+      Script: {instanceID: 11456}
+    - Class: 114
+      Script: {instanceID: 18240}
     - Class: 115
       Script: {instanceID: 0}
     - Class: 120
@@ -484,6 +502,12 @@ ScriptsOnlyBuild:
     className: Selectable
   - hash:
       serializedVersion: 2
+      Hash: 8e96aee6bc401a18bd43a5fce50a5599
+    assemblyName: Assembly-CSharp.dll
+    namespaceName: 
+    className: PlayerPanel
+  - hash:
+      serializedVersion: 2
       Hash: 00ca1509024354d99303f8db3d5730e9
     assemblyName: Assembly-CSharp.dll
     namespaceName: 
@@ -514,7 +538,7 @@ ScriptsOnlyBuild:
     className: MinePlanet
   - hash:
       serializedVersion: 2
-      Hash: 44cc166f0d853daef088f04e7e8517f6
+      Hash: 0708a82e5b79bdbe83d7a1f5f05b054b
     assemblyName: Assembly-CSharp.dll
     namespaceName: 
     className: Pawn
@@ -532,7 +556,7 @@ ScriptsOnlyBuild:
     className: TMP_SpriteAnimator
   - hash:
       serializedVersion: 2
-      Hash: 22ee43bcd14307b1206b47577d58e54d
+      Hash: 6239dcd267735e40b81d74282ddd3e6a
     assemblyName: Assembly-CSharp.dll
     namespaceName: 
     className: GameLogic
@@ -580,7 +604,7 @@ ScriptsOnlyBuild:
     className: RawImage
   - hash:
       serializedVersion: 2
-      Hash: ec24d994922be63451aa9abe95a6295e
+      Hash: 081db64d1c5ce51d33a05033ad8738e9
     assemblyName: Assembly-CSharp.dll
     namespaceName: 
     className: GraphContainer
@@ -634,7 +658,7 @@ ScriptsOnlyBuild:
     className: Physics2DRaycaster
   - hash:
       serializedVersion: 2
-      Hash: abf4ad000758075f08fadbdf1b665094
+      Hash: af1063d26b4694b6b9895f4d07afeeab
     assemblyName: Assembly-CSharp.dll
     namespaceName: 
     className: PlayersManager
@@ -652,7 +676,7 @@ ScriptsOnlyBuild:
     className: TimelineAsset
   - hash:
       serializedVersion: 2
-      Hash: 319f289dd41476c23b710382f674bd6f
+      Hash: 0c9032c121a0d8a47bedee74666bbf21
     assemblyName: Assembly-CSharp.dll
     namespaceName: 
     className: SpaceSystem
@@ -700,7 +724,7 @@ ScriptsOnlyBuild:
     className: Background
   - hash:
       serializedVersion: 2
-      Hash: 766d87c30054da025d5dbfdd3d5f66f9
+      Hash: bc43aef3b8c589244aa81c3aaeefe8be
     assemblyName: Assembly-CSharp.dll
     namespaceName: 
     className: Player
@@ -808,10 +832,22 @@ ScriptsOnlyBuild:
     className: ToggleGroup
   - hash:
       serializedVersion: 2
+      Hash: ae10a5f5007be5f6a11664e690a2c17a
+    assemblyName: Assembly-CSharp.dll
+    namespaceName: 
+    className: EndGamePlayerPanel
+  - hash:
+      serializedVersion: 2
       Hash: c3d3430df9e3ea95e3e3d587961390fb
     assemblyName: Unity.Timeline.dll
     namespaceName: UnityEngine.Timeline
     className: PlayableTrack
+  - hash:
+      serializedVersion: 2
+      Hash: 768e0b2401d6f4fdefbb3f86c12c662e
+    assemblyName: Assembly-CSharp.dll
+    namespaceName: 
+    className: TextMoving
   platform: 19
   scenePathNames:
   - Assets/_Scenes/MainMenu.unity

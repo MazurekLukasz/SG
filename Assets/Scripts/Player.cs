@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+public enum Strategy{casual, builder, explorer, warrior }
+
 public class Player : MonoBehaviour
 {
     [SerializeField] private BattleHandler battle;
@@ -19,14 +21,32 @@ public class Player : MonoBehaviour
     //------------------bocie sprawy
     public bool Bot = false;
     public bool NeedResearch = false;
+    public Strategy Tactics;
 
+    public int DeathTurn;
+    float a = 1f, b = 0.2f, c = 0.3f, d = 0.3f;
+    //float a = 2f, b = 1f, c = 0.5f, d = 0.5f;
 
     public void ActivateBonus(int bon)
     {
+        float T = (GameLogic.Instance.turnsCounter / GameLogic.Instance.namesHolder.GetTurnLimit()) * 10;
+
+        Debug.LogWarning(GameLogic.Instance.turnsCounter);
+        Debug.LogWarning(GameLogic.Instance.namesHolder.GetTurnLimit() + 1);
+        Debug.LogWarning(T);
+        Debug.LogWarning(bon);
+
         Bonus = true;
-        BonusTime = bon *2;
-        GoldAmount *= (bon);
-        AdditionalQuestPoints = bon / 2;
+
+        BonusTime = (int)(a * bon);
+        GoldAmount *= (int)(b* bon * T);
+        Debug.LogWarning(c +" * "+ bon+ " * " + T);
+        AdditionalQuestPoints = (int)((c * bon) *T);
+        Debug.LogWarning("quest point: " + AdditionalQuestPoints + " gold: " + GoldAmount + " bonus time: " +BonusTime+ "move pooint:"+ (int)((d * bon) * T));
+        foreach (var pawn in pawnList)
+        {
+            pawn.GetComponent<Pawn>().bonus = (int)((d * bon) *T);
+        }
     }
 
     public float goldAmount
@@ -109,6 +129,10 @@ public class Player : MonoBehaviour
             Bonus = false;
             AdditionalQuestPoints = 0;
             BonusTime = 0;
+            foreach (var pawn in pawnList)
+            {
+                pawn.GetComponent<Pawn>().bonus = 0;
+            }
         }
         else BonusTime--;
 
@@ -121,7 +145,7 @@ public class Player : MonoBehaviour
 
         foreach (var pawn in pawnList)
         {
-            pawn.GetComponent<Pawn>().RestartPoints(AdditionalQuestPoints);
+            pawn.GetComponent<Pawn>().RestartPoints();
         }
     }
 

@@ -34,29 +34,54 @@ public class SpaceSystem : MonoBehaviour
     {
         Initialize();
 
-        CityChance = 0;
-        MineChance = 3;
-        int PlanetsNumber = Random.Range(5, 11); // od 3  do 8 planet
-
-        for (int i = 1; i < PlanetsNumber; i++)
+        if (NamesHolder.mapMode == MapMode.normal)
         {
-            if (i == PlanetsNumber - 1)
-                continue;
+            CityChance = 0;
+            MineChance = 3;
+            int PlanetsNumber = Random.Range(5, 11); // od 3  do 8 planet
 
-            int Position = Random.Range(0, 8);
+            for (int i = 1; i < PlanetsNumber; i++)
+            {
+                if (i == PlanetsNumber - 1)
+                    continue;
 
-            float xrad = Xradius * ((float)(i+1) / (float)PlanetsNumber);
-            float yrad = Yradius * ((float)(i+1) / (float)PlanetsNumber);
+                int Position = Random.Range(0, 8);
 
-            float x = Mathf.Sin(Mathf.Deg2Rad * (Position * 40f)) * xrad;
-            float y = Mathf.Cos(Mathf.Deg2Rad * (Position * 40f)) * yrad;
+                float xrad = Xradius * ((float)(i + 1) / (float)PlanetsNumber);
+                float yrad = Yradius * ((float)(i + 1) / (float)PlanetsNumber);
 
-            Vector3 pos =   new Vector3(x, y, 0f);
+                float x = Mathf.Sin(Mathf.Deg2Rad * (Position * 40f)) * xrad;
+                float y = Mathf.Cos(Mathf.Deg2Rad * (Position * 40f)) * yrad;
 
-            GameObject planet;
+                Vector3 pos = new Vector3(x, y, 0f);
 
-            planet = CreatePlanet(pos,i,xrad,yrad,BasicSector);
+                GameObject planet;
+
+                planet = CreatePlanet(pos, i, xrad, yrad, BasicSector);
+            }
         }
+        else if (NamesHolder.mapMode == MapMode.separate || NamesHolder.mapMode == MapMode.shared)
+        {
+            for (int i = 1; i < 10; i++)
+            {
+                if (i == 9)
+                    continue;
+
+                int Position = Random.Range(0, 8);
+                float xrad = Xradius * ((float)(i+1 ) / (float)10);
+                float yrad = Yradius * ((float)(i +1) / (float)10);
+
+                float x = Mathf.Sin(Mathf.Deg2Rad * (Position * 40f)) * xrad;
+                float y = Mathf.Cos(Mathf.Deg2Rad * (Position * 40f)) * yrad;
+
+                Vector3 pos = new Vector3(x, y, 0f);
+
+                GameObject planet;
+
+                planet = CreatePlanet(pos, i, xrad, yrad, BasicSector);
+            }
+        }
+
     }
 
     // check if other planet is already in this place
@@ -87,51 +112,82 @@ public class SpaceSystem : MonoBehaviour
     // utwórz planetę
     private GameObject CreatePlanet(Vector3 vec,int i, float x, float y,bool basic)
     {
-        GameObject planet;
-        int Rand = Random.Range(0, 10);
-        if (basic)
+        GameObject planet = null;
+        if (NamesHolder.mapMode == MapMode.normal)
         {
-            if (i == 1)
+            int Rand = Random.Range(0, 10);
+            if (basic)
             {
-                planet = MotherPlanet;
-            }
-            else if (Rand <= MineChance)
-            {
-                planet = MinePlanet;
-                MineChance--;
+                if (i == 1)
+                {
+                    planet = MotherPlanet;
+                }
+                else if (Rand <= MineChance)
+                {
+                    planet = MinePlanet;
+                    MineChance--;
+                }
+                else
+                {
+                    planet = point1;
+                }
             }
             else
             {
-                planet = point1;
+                if (Rand == CityChance)
+                {
+                    planet = MotherPlanet;
+                    CityChance--;
+                }
+                else if (Rand <= MineChance)
+                {
+                    planet = MinePlanet;
+                    MineChance--;
+                }
+                else
+                {
+                    planet = point1;
+                }
             }
+
+            GameObject obj = Instantiate(planet, vec, new Quaternion(0, 0, 0, 0));
+            obj.transform.SetParent(gameObject.transform, false);
+
+            GameObject cir = Instantiate(Circle, transform);
+            cir.transform.SetParent(gameObject.transform, false);
+            cir.GetComponent<Circle>().Create(40, x, y, 0.05f);
+            Circles.Add(cir);
+            PlanetsList.Add(obj);
+            return obj;
         }
-        else
+        else if (NamesHolder.mapMode == MapMode.separate || NamesHolder.mapMode == MapMode.shared)
         {
-            if (Rand == CityChance)
+            switch (i)
             {
-                planet = MotherPlanet;
-                CityChance--;
+                case 1:
+                    planet = MotherPlanet;
+                    break;
+                case 5:
+                case 3:
+                    planet = MinePlanet;
+                    break;
+                default:
+                    planet = point1;
+                    break;
             }
-            else if (Rand <= MineChance)
-            {
-                planet = MinePlanet;
-                MineChance--;
-            }
-            else
-            {
-                planet = point1;
-            }
+
+            GameObject obj = Instantiate(planet, vec, new Quaternion(0, 0, 0, 0));
+            obj.transform.SetParent(gameObject.transform, false);
+
+            GameObject cir = Instantiate(Circle, transform);
+            cir.transform.SetParent(gameObject.transform, false);
+            cir.GetComponent<Circle>().Create(40, x, y, 0.05f);
+            Circles.Add(cir);
+            PlanetsList.Add(obj);
+            return obj;
         }
 
-        GameObject obj = Instantiate(planet, vec, new Quaternion(0,0,0,0));
-        obj.transform.SetParent(gameObject.transform, false);
-
-        GameObject cir = Instantiate(Circle,transform);
-        cir.transform.SetParent(gameObject.transform, false);
-        cir.GetComponent<Circle>().Create(40,x, y,0.05f);
-        Circles.Add(cir);
-        PlanetsList.Add(obj);
-        return obj;
+        return null;
     }
 
     public SpaceSystem Last;

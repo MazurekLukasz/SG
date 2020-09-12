@@ -19,7 +19,7 @@ public class Pawn : MonoBehaviour
 
     void Start()
     {
-        RestartPoints(Player.GetComponent<Player>().AdditionalQuestPoints);
+        RestartPoints();
         ChangeDistanceOffset(1);
         //GameObject[] Points = GetComponentsInChildren<GameObject>();
         //foreach (var item in Points)
@@ -51,22 +51,22 @@ public class Pawn : MonoBehaviour
         {
             case 1:
                 {
-                    cost = 250;
+                    cost = 200;
                     break;
                 }
             case 2:
                 {
-                    cost = 300;
+                    cost = 250;
                     break;
                 }
             case 3:
                 {
-                    cost = 350;
+                    cost = 300;
                     break;
                 }
             case 4:
                 {
-                    cost = 450;
+                    cost = 350;
                     break;
                 }
         }
@@ -148,10 +148,11 @@ public class Pawn : MonoBehaviour
         HL.SetActive(false);
     }
 
-    public void RestartPoints(int bon)
+    public int bonus = 0;
+    public void RestartPoints()
     {
         activeMoveBlocks = 3;
-        ActionPoint = VisualPoints.Count + bon;
+        ActionPoint = VisualPoints.Count + bonus;
 
         foreach (var item in VisualPoints)
         {
